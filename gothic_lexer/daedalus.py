@@ -51,7 +51,7 @@ class DaedalusLexer(RegexLexer):
             (r"\s+", Whitespace),
             (r"//.*", Comment),
             (r"/\*", Comment.Multiline, "comment-block"),
-            (r"(VAR|CONST)(\s+)([\w_]+)", bygroups(Declaration, Whitespace, Keyword.Type), "var"),
+            (r"(VAR|CONST)(\s+)([\w_]+)", bygroups(Declaration, Whitespace, Keyword.Type)),
             (r"IF", Reserved, "if-block"),
             (_keywords, Reserved),
             (_global_constants, Keyword.Constant),
@@ -105,7 +105,6 @@ class DaedalusLexer(RegexLexer):
             (r"(NAMESPACE)(\s+)([\w_]+)", bygroups(Declaration, Whitespace, Namespace), "#push"),
             include("root"),
         ],
-        "var": [(r";", Punctuation, "#pop"), include("general")],
     }
 
     def get_tokens_unprocessed(self, text, stack=("root",)):
@@ -555,3 +554,22 @@ class DaedalusLexer(RegexLexer):
         "WLD_SETWEATHERTYPE",
         "WLD_TOGGLERAIN",
     }
+
+
+def main():
+    import sys
+
+    if len(sys.argv) == 1:
+        sys.exit("No file provided")
+
+    with open(sys.argv[1]) as file:
+        source = file.read()
+
+    tokens = DaedalusLexer().get_tokens(source)
+
+    for token in tokens:
+        print(token)
+
+
+if __name__ == "__main__":
+    main()
