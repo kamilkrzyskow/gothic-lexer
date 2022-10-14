@@ -1,0 +1,20 @@
+# Virtual Environment
+venv
+
+# Example/Test files
+*exam*
+gothic_lexer/*.d
+*.log
+*.ps1
+
+# Cache
+__pycache__
+build
+gothic_lexer.egg-info
+
+# Generated pygments files
+*.html
+*.css
+
+# IDE files
+.idea
