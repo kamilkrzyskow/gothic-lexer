@@ -31,19 +31,26 @@ class DaedalusLexer(RegexLexer):
     )
     _keywords = words({"RETURN", "WHILE", "CONTINUE", "BREAK"}, suffix=r"\b")
 
+    _basic_var: str = r"[\w_]+"
+    _ext_var: str = r"[\w@_^]+"
+
     tokens = {
         "root": [
             (r"(INSTANCE|PROTOTYPE)(\s+)", bygroups(Declaration, Whitespace), "instance-prototype"),
-            (r"(CLASS)(\s+)([\w@_]+)", bygroups(Declaration, Whitespace, Name.Class), "class"),
             (
-                r"(NAMESPACE)(\s+)([\w_]+)",
-                bygroups(Declaration, Whitespace, Namespace),
+                r"(CLASS)(\s+)(" + _ext_var + r")(\s*)({)",
+                bygroups(Declaration, Whitespace, Name.Class, Whitespace, Punctuation),
+                "class",
+            ),
+            (
+                r"(NAMESPACE)(\s+)(" + _basic_var + r")(\s*)({)",
+                bygroups(Declaration, Whitespace, Namespace, Whitespace, Punctuation),
                 "namespace",
             ),
             (
-                r"(FUNC)(\s+)([\w_]+)(\s+)([\w@_]+)",
+                rf"(FUNC)(\s+)({_basic_var})(\s+)({_ext_var})",
                 bygroups(Declaration, Whitespace, Keyword.Type, Whitespace, Name.Function),
-                "function",
+                "function-declaration",
             ),
             include("general"),
         ],
@@ -51,28 +58,43 @@ class DaedalusLexer(RegexLexer):
             (r"\s+", Whitespace),
             (r"//.*", Comment),
             (r"/\*", Comment.Multiline, "comment-block"),
-            (r"(VAR|CONST)(\s+)([\w_]+)", bygroups(Declaration, Whitespace, Keyword.Type), "var"),
+            (
+                rf"(VAR|CONST)(\s+)({_basic_var})(\s+)({_ext_var})",
+                bygroups(Declaration, Whitespace, Keyword.Type, Whitespace, Name),
+                "var",
+            ),
             (r"IF", Reserved, "if-block"),
             (_keywords, Reserved),
             (_global_constants, Keyword.Constant),
             (_implicit_pseudo, Name.Builtin.Pseudo),
             (r"\d+\.\d+", Number.Float),
             (r"\d+", Integer),
-            (r"([\w@_]+)(:)", bygroups(Name.Label, Punctuation)),
-            (r"[\w@_^]+", Name),
+            (rf"({_ext_var})(:)", bygroups(Name.Label, Punctuation)),
+            (_ext_var, Name),
             (r"\(", Punctuation, "parenthesis"),
             (r"[,.:;{}\[\]]", Punctuation),
             (r"[-+=*/\|&<>!%~]", Operator),
             (r'".*?"', String),
         ],
-        "class": [(r"}\s*;", Punctuation, "#pop"), include("general")],
+        "class": [
+            (r"}\s*;", Punctuation, "#pop"),
+            include("general"),
+        ],
         "comment-block": [
             (r"\*/", Comment.Multiline, "#pop"),
             (r"/\*", Comment.Multiline, "#push"),
             (r"[*/]", Comment.Multiline),
             (r"[^*/]+", Comment.Multiline),
         ],
-        "function": [(r"}\s*;", Punctuation, "#pop"), include("general")],
+        "function-declaration": [
+            (r"\s+", Whitespace),
+            (r"\(", Punctuation, "parenthesis"),
+            (r"{", Punctuation, "function-inner"),
+        ],
+        "function-inner": [
+            (r"}\s*;", Punctuation, "#pop:2"),
+            include("general"),
+        ],
         "if-block": [
             (r"}\s*;", Punctuation, "#pop"),
             (r"IF", Reserved, "#push"),
@@ -83,7 +105,7 @@ class DaedalusLexer(RegexLexer):
         "instance-prototype": [
             (r"{", Punctuation, "instance-prototype-inner"),
             (r";", Punctuation, "#pop"),
-            (r"(\()([\w@_]+)(\))", bygroups(Punctuation, Name.Class, Punctuation)),
+            (rf"(\()({_ext_var})(\))", bygroups(Punctuation, Name.Class, Punctuation)),
             include("general"),
         ],
         "instance-prototype-inner": [
@@ -96,33 +118,39 @@ class DaedalusLexer(RegexLexer):
                 ),
             ),
             (
-                r"(\w+)(\s*)(\[)([\w@_]+)(\])(\s*)(=)",
+                rf"(\w+)(\s*)(\[)({_ext_var})(\])(\s*)(=)",
                 bygroups(Member, Whitespace, Punctuation, Name, Punctuation, Whitespace, Operator),
             ),
             include("general"),
         ],
         "namespace": [
             (r"}\s*;", Punctuation, "#pop"),
-            (r"(NAMESPACE)(\s+)([\w_]+)", bygroups(Declaration, Whitespace, Namespace), "#push"),
+            (
+                rf"(NAMESPACE)(\s+)({_basic_var})",
+                bygroups(Declaration, Whitespace, Namespace),
+                "#push",
+            ),
             include("root"),
         ],
         "parenthesis": [
             (r"\)", Punctuation, "#pop"),
             (
-                r"(VAR|CONST)(\s+)([\w_]+)",
-                bygroups(Declaration, Whitespace, Keyword.Type),
+                rf"(VAR|CONST)(\s+)({_basic_var})(\s+)({_ext_var})",
+                bygroups(Declaration, Whitespace, Keyword.Type, Whitespace, Name),
                 "var-inner",
             ),
             include("general"),
         ],
         "var": [
             (r";", Punctuation, "#pop"),
+            (r"\s+", Whitespace),
             include("general"),
         ],
         "var-inner": [
             (r",", Punctuation, "#pop"),
             (r"\)", Punctuation, "#pop:2"),
-            include("general"),
+            (r"\s+", Whitespace),
+            (_ext_var, Text),
         ],
     }
 
