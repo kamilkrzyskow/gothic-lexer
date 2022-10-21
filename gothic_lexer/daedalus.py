@@ -51,7 +51,7 @@ class DaedalusLexer(RegexLexer):
             (r"\s+", Whitespace),
             (r"//.*", Comment),
             (r"/\*", Comment.Multiline, "comment-block"),
-            (r"(VAR|CONST)(\s+)([\w_]+)", bygroups(Declaration, Whitespace, Keyword.Type)),
+            (r"(VAR|CONST)(\s+)([\w_]+)", bygroups(Declaration, Whitespace, Keyword.Type), "var"),
             (r"IF", Reserved, "if-block"),
             (_keywords, Reserved),
             (_global_constants, Keyword.Constant),
@@ -60,7 +60,8 @@ class DaedalusLexer(RegexLexer):
             (r"\d+", Integer),
             (r"([\w@_]+)(:)", bygroups(Name.Label, Punctuation)),
             (r"[\w@_^]+", Name),
-            (r"[\(\),.:;{}\[\]]", Punctuation),
+            (r"\(", Punctuation, "parenthesis"),
+            (r"[,.:;{}\[\]]", Punctuation),
             (r"[-+=*/\|&<>!%~]", Operator),
             (r'".*?"', String),
         ],
@@ -104,6 +105,24 @@ class DaedalusLexer(RegexLexer):
             (r"}\s*;", Punctuation, "#pop"),
             (r"(NAMESPACE)(\s+)([\w_]+)", bygroups(Declaration, Whitespace, Namespace), "#push"),
             include("root"),
+        ],
+        "parenthesis": [
+            (r"\)", Punctuation, "#pop"),
+            (
+                r"(VAR|CONST)(\s+)([\w_]+)",
+                bygroups(Declaration, Whitespace, Keyword.Type),
+                "var-inner",
+            ),
+            include("general"),
+        ],
+        "var": [
+            (r";", Punctuation, "#pop"),
+            include("general"),
+        ],
+        "var-inner": [
+            (r",", Punctuation, "#pop"),
+            (r"\)", Punctuation, "#pop:2"),
+            include("general"),
         ],
     }
 
