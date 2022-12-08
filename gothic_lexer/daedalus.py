@@ -36,6 +36,7 @@ class DaedalusLexer(RegexLexer):
 
     tokens = {
         "root": [
+            (r"(META)(\s+)", bygroups(Declaration, Whitespace), "meta"),
             (r"(INSTANCE|PROTOTYPE)(\s+)", bygroups(Declaration, Whitespace), "instance-prototype"),
             (
                 r"(CLASS)(\s+)(" + _ext_var + r")(\s*)({)",
@@ -121,6 +122,12 @@ class DaedalusLexer(RegexLexer):
                 rf"(\w+)(\s*)(\[)({_ext_var})(\])(\s*)(=)",
                 bygroups(Member, Whitespace, Punctuation, Name, Punctuation, Whitespace, Operator),
             ),
+            include("general"),
+        ],
+        "meta": [
+            (r"}\s*;", Punctuation, "#pop"),
+            (r"(\w+)(\s*)(//.*)", bygroups(Member, Whitespace, Comment)),
+            (r"(\w+)(\s*)(=)", bygroups(Member, Whitespace, Operator)),
             include("general"),
         ],
         "namespace": [
