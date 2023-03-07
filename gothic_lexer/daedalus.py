@@ -70,7 +70,8 @@ class DaedalusLexer(RegexLexer):
             (_implicit_pseudo, Name.Builtin.Pseudo),
             (r"\d+\.\d+", Number.Float),
             (r"\d+", Integer),
-            (rf"({_ext_var})(:)", bygroups(Name.Label, Punctuation)),
+            (rf"({_ext_var})(\s*)(:)", bygroups(Name.Label, Whitespace, Punctuation)),
+            (rf"({_ext_var})(\s*)(\()", bygroups(Name.Builtin.Other, Whitespace, Punctuation), "parenthesis"),
             (_ext_var, Name),
             (r"\(", Punctuation, "parenthesis"),
             (r"[,.:;{}\[\]]", Punctuation),
@@ -106,7 +107,14 @@ class DaedalusLexer(RegexLexer):
         "instance-prototype": [
             (r"{", Punctuation, "instance-prototype-inner"),
             (r";", Punctuation, "#pop"),
-            (rf"(\()({_ext_var})(\))", bygroups(Punctuation, Name.Class, Punctuation)),
+            (_implicit_pseudo, Name.Builtin.Pseudo),
+            (_ext_var, Name),
+            (r",", Punctuation),
+            (r"\s+", Whitespace),
+            (
+                rf"(\()(\s*)({_ext_var})(\s*)(\))",
+                bygroups(Punctuation, Whitespace, Name.Class, Whitespace, Punctuation)
+            ),
             include("general"),
         ],
         "instance-prototype-inner": [
@@ -141,6 +149,7 @@ class DaedalusLexer(RegexLexer):
         ],
         "parenthesis": [
             (r"\)", Punctuation, "#pop"),
+            (r"\(", Punctuation, "#push"),
             (
                 rf"(VAR|CONST)(\s+)({_basic_var})(\s+)({_ext_var})",
                 bygroups(Declaration, Whitespace, Keyword.Type, Whitespace, Name),
@@ -163,12 +172,21 @@ class DaedalusLexer(RegexLexer):
 
     def get_tokens_unprocessed(self, text, stack=("root",)):
         for index, token, value in RegexLexer.get_tokens_unprocessed(self, text, stack):
+            if token is Name.Builtin.Other and not value.startswith(self._OTHER):
+                token = Name
+
             if token is Name and value.upper() in self._EXTERNALS:
                 yield index, Name.Builtin.Externals, value
             elif token is Name and value.upper() in self._ZPARSEREXTENDER:
                 yield index, Name.Builtin.ZParserExtender, value
             else:
                 yield index, token, value
+
+    _OTHER: tuple[str] = (
+        "LeGo",
+        "MEM",
+        "CALL",
+    )
 
     _EXTERNALS: set[str] = {
         "AI_AIMAT",

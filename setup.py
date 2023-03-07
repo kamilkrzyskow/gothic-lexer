@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-VERSION = "1.2.0"
+VERSION = "1.3.0"
 
 setup(
     name="gothic-lexer",

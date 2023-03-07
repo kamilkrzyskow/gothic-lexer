@@ -1,5 +1,5 @@
 """
-Correct tokens for the `general.d` file. Whitespace tokens are included.
+Correct tokens for the `var.d` file. Whitespace tokens are included.
 """
 from pygments.token import Token
 
